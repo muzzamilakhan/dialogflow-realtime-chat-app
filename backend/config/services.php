@@ -35,4 +35,11 @@ return [
         ],
     ],
 
+    'dialogflow' => [
+        'project_id' => env('DIALOGFLOW_PROJECT_ID'),
+        'client_email' => env('DIALOGFLOW_CLIENT_EMAIL'),
+        'private_key' => env('DIALOGFLOW_PRIVATE_KEY'),
+        'language' => env('DIALOGFLOW_LANGUAGE', 'en'),
+    ],
+
 ];

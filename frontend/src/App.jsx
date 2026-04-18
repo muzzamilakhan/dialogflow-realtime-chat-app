@@ -1,56 +1,80 @@
-import { useState } from "react";
-import axios from "axios";
+import { useEffect, useState } from 'react';
+import './App.css';
+import { LoginForm } from './components/LoginForm';
+import { ChatPage } from './pages/ChatPage';
+import { loginUser, logoutUser, setAuthToken } from './services/api';
+
+const STORAGE_KEY = 'dialogflow-chat-auth';
 
 function App() {
-  const [token, setToken] = useState("");
-  const [email] = useState("admin@test.com");
-  const [password] = useState("password");
-  const [text, setText] = useState("");
-  const [messages, setMessages] = useState([]);
+  const [auth, setAuth] = useState(() => {
+    const saved = localStorage.getItem(STORAGE_KEY);
 
-  const api = axios.create({
-    baseURL: "http://127.0.0.1:8000/api",
+    if (!saved) {
+      return { token: '', user: null };
+    }
+
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return { token: '', user: null };
+    }
   });
+  const [loginError, setLoginError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
-  const login = async () => {
-    const res = await api.post("/login", { email, password });
-    setToken(res.data.token);
+  useEffect(() => {
+    setAuthToken(auth.token);
+
+    if (auth.token) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(auth));
+      return;
+    }
+
+    localStorage.removeItem(STORAGE_KEY);
+  }, [auth]);
+
+  const handleLogin = async (credentials) => {
+    setIsLoggingIn(true);
+    setLoginError('');
+
+    try {
+      const response = await loginUser(credentials);
+      setAuth({
+        token: response.token,
+        user: response.user,
+      });
+    } catch (error) {
+      setLoginError(
+        error?.response?.data?.message ||
+          'Unable to sign in right now. Please verify the demo credentials and try again.',
+      );
+    } finally {
+      setIsLoggingIn(false);
+    }
   };
 
-  const send = async () => {
-    const res = await api.post(
-      "/send",
-      { message: text },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    );
-
-    setMessages([...messages, { me: text }, { bot: res.data.reply }]);
-    setText("");
+  const handleLogout = async () => {
+    try {
+      if (auth.token) {
+        await logoutUser();
+      }
+    } catch {
+      // Clearing local auth is enough for demo logout.
+    } finally {
+      setAuth({ token: '', user: null });
+      setLoginError('');
+    }
   };
 
-  if (!token) {
-    return <button onClick={login}>Login</button>;
-  }
-
-  return (
-    <div>
-      <h1>Chat App</h1>
-
-      {messages.map((m, i) => (
-        <div key={i}>
-          {m.me && <p>You: {m.me}</p>}
-          {m.bot && <p>Bot: {m.bot}</p>}
-        </div>
-      ))}
-
-      <input value={text} onChange={(e) => setText(e.target.value)} />
-
-      <button onClick={send}>Send</button>
-    </div>
+  return auth.token ? (
+    <ChatPage auth={auth} onLogout={handleLogout} />
+  ) : (
+    <LoginForm
+      error={loginError}
+      isLoading={isLoggingIn}
+      onSubmit={handleLogin}
+    />
   );
 }
 
