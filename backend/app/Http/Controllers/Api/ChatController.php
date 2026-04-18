@@ -46,9 +46,11 @@ class ChatController extends Controller
             'title' => ['nullable', 'string', 'max:120'],
         ]);
 
+        $title = $validated['title'] ?? 'New Conversation';
+
         $session = ChatSession::create([
             'user_id' => $request->user()->id,
-            'title' => $validated['title'] ?: 'New Conversation',
+            'title' => $title,
             'status' => 'active',
         ]);
 

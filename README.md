@@ -34,6 +34,8 @@ Set these in [backend/.env](/C:/wamp64/www/dialogflow-realtime-chat-app/backend/
 - `DB_PASSWORD=`
 - `DIALOGFLOW_PROJECT_ID=...`
 - `DIALOGFLOW_CLIENT_EMAIL=...`
+- `DIALOGFLOW_CREDENTIALS_PATH=D:/chat-bot-project-493715-37aeae167785.json`
+- `DIALOGFLOW_CA_BUNDLE_PATH=C:/wamp64/bin/php/php8.3.14/cacert.pem`
 - `DIALOGFLOW_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"`
 - `DIALOGFLOW_LANGUAGE=en`
 - `CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:3001,http://127.0.0.1:3001`
@@ -46,6 +48,8 @@ Optional frontend overrides:
 Optional socket server override:
 
 - `socketserver/.env` or shell env -> `BACKEND_API_URL=http://localhost/dialogflow-realtime-chat-app/backend/public/api`
+
+For the most reliable Google auth setup, prefer `DIALOGFLOW_CREDENTIALS_PATH` and keep the full service-account JSON outside the repo.
 
 ## Setup
 

@@ -39,6 +39,8 @@ return [
         'project_id' => env('DIALOGFLOW_PROJECT_ID'),
         'client_email' => env('DIALOGFLOW_CLIENT_EMAIL'),
         'private_key' => env('DIALOGFLOW_PRIVATE_KEY'),
+        'credentials_path' => env('DIALOGFLOW_CREDENTIALS_PATH'),
+        'ca_bundle_path' => env('DIALOGFLOW_CA_BUNDLE_PATH'),
         'language' => env('DIALOGFLOW_LANGUAGE', 'en'),
     ],
 

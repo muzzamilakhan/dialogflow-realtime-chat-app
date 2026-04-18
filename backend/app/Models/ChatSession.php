@@ -11,6 +11,8 @@ class ChatSession extends Model
 {
     use HasFactory;
 
+    protected $table = 'chat_sessions';
+
     protected $fillable = [
         'user_id',
         'title',

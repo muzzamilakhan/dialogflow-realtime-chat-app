@@ -2,9 +2,13 @@
 
 namespace App\Services;
 
+use Google\Auth\Credentials\ServiceAccountCredentials;
+use Google\Auth\HttpHandler\Guzzle7HttpHandler;
+use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 
@@ -13,7 +17,8 @@ class DialogflowService
     public function detectIntent(string $sessionId, string $text): array
     {
         try {
-            $response = Http::withToken($this->accessToken())
+            $response = Http::withOptions($this->httpOptions())
+                ->withToken($this->accessToken())
                 ->timeout(20)
                 ->post($this->detectIntentUrl($sessionId), [
                     'queryInput' => [
@@ -56,39 +61,16 @@ class DialogflowService
     protected function accessToken(): string
     {
         return Cache::remember('dialogflow_access_token', now()->addMinutes(50), function () {
-            $issuedAt = time();
-            $privateKey = str_replace('\n', "\n", (string) config('services.dialogflow.private_key'));
+            $this->configureCaBundle();
 
-            $header = $this->base64UrlEncode(json_encode([
-                'alg' => 'RS256',
-                'typ' => 'JWT',
-            ]));
+            $credentials = new ServiceAccountCredentials(
+                ['https://www.googleapis.com/auth/cloud-platform'],
+                $this->serviceAccountConfig()
+            );
 
-            $claims = $this->base64UrlEncode(json_encode([
-                'iss' => config('services.dialogflow.client_email'),
-                'scope' => 'https://www.googleapis.com/auth/cloud-platform',
-                'aud' => 'https://oauth2.googleapis.com/token',
-                'exp' => $issuedAt + 3600,
-                'iat' => $issuedAt,
-            ]));
-
-            $unsignedToken = $header.'.'.$claims;
-
-            if (! openssl_sign($unsignedToken, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
-                throw new RuntimeException('Unable to sign the Dialogflow JWT assertion.');
-            }
-
-            $jwt = $unsignedToken.'.'.$this->base64UrlEncode($signature);
-
-            $tokenResponse = Http::asForm()
-                ->timeout(20)
-                ->post('https://oauth2.googleapis.com/token', [
-                    'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
-                    'assertion' => $jwt,
-                ])
-                ->throw()
-                ->json();
-
+            $tokenResponse = $credentials->fetchAuthToken(
+                new Guzzle7HttpHandler(new Client($this->httpOptions()))
+            );
             $accessToken = data_get($tokenResponse, 'access_token');
 
             if (! $accessToken) {
@@ -99,8 +81,57 @@ class DialogflowService
         });
     }
 
-    protected function base64UrlEncode(string $value): string
+    protected function serviceAccountConfig(): array|string
     {
-        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+        $credentialsPath = config('services.dialogflow.credentials_path');
+
+        if (is_string($credentialsPath) && $credentialsPath !== '') {
+            if (! is_file($credentialsPath)) {
+                throw new RuntimeException('Dialogflow credentials file was not found.');
+            }
+
+            return $credentialsPath;
+        }
+
+        $privateKey = str_replace('\n', "\n", (string) config('services.dialogflow.private_key'));
+
+        if (Str::of($privateKey)->trim()->isEmpty()) {
+            throw new RuntimeException('Dialogflow private key is not configured.');
+        }
+
+        return [
+            'type' => 'service_account',
+            'project_id' => config('services.dialogflow.project_id'),
+            'private_key' => $privateKey,
+            'client_email' => config('services.dialogflow.client_email'),
+            'token_uri' => 'https://oauth2.googleapis.com/token',
+        ];
+    }
+
+    protected function httpOptions(): array
+    {
+        $this->configureCaBundle();
+
+        $caBundlePath = config('services.dialogflow.ca_bundle_path');
+
+        if (is_string($caBundlePath) && is_file($caBundlePath)) {
+            return ['verify' => $caBundlePath];
+        }
+
+        return [];
+    }
+
+    protected function configureCaBundle(): void
+    {
+        $caBundlePath = config('services.dialogflow.ca_bundle_path');
+
+        if (! is_string($caBundlePath) || ! is_file($caBundlePath)) {
+            return;
+        }
+
+        ini_set('curl.cainfo', $caBundlePath);
+        ini_set('openssl.cafile', $caBundlePath);
+        putenv("SSL_CERT_FILE={$caBundlePath}");
+        putenv("CURL_CA_BUNDLE={$caBundlePath}");
     }
 }
