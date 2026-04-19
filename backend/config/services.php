@@ -40,6 +40,8 @@ return [
         'client_email' => env('DIALOGFLOW_CLIENT_EMAIL'),
         'private_key' => env('DIALOGFLOW_PRIVATE_KEY'),
         'credentials_path' => env('DIALOGFLOW_CREDENTIALS_PATH'),
+        'credentials_json' => env('DIALOGFLOW_CREDENTIALS_JSON'),
+        'credentials_base64' => env('DIALOGFLOW_CREDENTIALS_BASE64'),
         'ca_bundle_path' => env('DIALOGFLOW_CA_BUNDLE_PATH'),
         'language' => env('DIALOGFLOW_LANGUAGE', 'en'),
     ],

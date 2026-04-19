@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: dialogflow-chat-socketserver
+    runtime: node
+    rootDir: socketserver
+    buildCommand: npm install
+    startCommand: npm start
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: BACKEND_API_URL
+        sync: false

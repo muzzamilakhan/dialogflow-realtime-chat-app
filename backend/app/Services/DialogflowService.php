@@ -83,6 +83,36 @@ class DialogflowService
 
     protected function serviceAccountConfig(): array|string
     {
+        $jsonCredentials = config('services.dialogflow.credentials_json');
+
+        if (is_string($jsonCredentials) && trim($jsonCredentials) !== '') {
+            $decoded = json_decode($jsonCredentials, true);
+
+            if (! is_array($decoded)) {
+                throw new RuntimeException('Dialogflow credentials JSON is invalid.');
+            }
+
+            return $decoded;
+        }
+
+        $base64Credentials = config('services.dialogflow.credentials_base64');
+
+        if (is_string($base64Credentials) && trim($base64Credentials) !== '') {
+            $decoded = base64_decode($base64Credentials, true);
+
+            if (! is_string($decoded) || $decoded === '') {
+                throw new RuntimeException('Dialogflow base64 credentials could not be decoded.');
+            }
+
+            $json = json_decode($decoded, true);
+
+            if (! is_array($json)) {
+                throw new RuntimeException('Dialogflow base64 credentials JSON is invalid.');
+            }
+
+            return $json;
+        }
+
         $credentialsPath = config('services.dialogflow.credentials_path');
 
         if (is_string($credentialsPath) && $credentialsPath !== '') {
