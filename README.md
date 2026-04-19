@@ -79,6 +79,20 @@ npm install
 npm run dev
 ```
 
+Run with PM2:
+
+```bash
+cd socketserver
+npm install -g pm2
+npm run pm2:start
+```
+
+PM2 log files:
+
+- `socketserver/logs/output.log`
+- `socketserver/logs/error.log`
+- `socketserver/logs/combined.log`
+
 ## API summary
 
 - `POST /api/login`
@@ -100,6 +114,18 @@ Server to client:
 - `{ "type": "chat:history", "sessionId": 1, "messages": [...] }`
 - `{ "type": "chat:message", "sessionId": 1, "messages": [userMessage, botMessage] }`
 - `{ "type": "error", "code": "AUTH_FAILED", "message": "..." }`
+
+## Socket observability
+
+The socket server now logs:
+
+- server start and fatal process errors
+- websocket connect / disconnect / socket errors
+- raw incoming client messages
+- parsed event types like `auth` and `chat:send`
+- Laravel upstream request start / finish / failure
+- message transfer summaries from client to backend and back to client
+- active connected client counts in `GET /health`
 
 ## Demo checklist
 
